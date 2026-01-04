@@ -124,19 +124,18 @@ async function callAI(userText) {
   });
 
   const data = await res.json();
-  const raw = data.choices[0].message.content;
 
-  // 🔒 SAFE JSON EXTRACTION
-  const start = raw.indexOf("{");
-  const end = raw.lastIndexOf("}");
+  // With response_format=json_object, this is GUARANTEED JSON
+  const content = data.choices[0].message.content;
 
-  if (start === -1 || end === -1) {
-    throw new Error("AI did not return valid JSON");
+  if (typeof content === "string") {
+    return JSON.parse(content);
   }
 
-  const jsonString = raw.slice(start, end + 1);
-  return JSON.parse(jsonString);
+  // Some models already return object
+  return content;
 }
+
 
 /* ===========================
    CALL ELECTRONICS BACKEND
