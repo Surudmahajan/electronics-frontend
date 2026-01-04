@@ -32,7 +32,7 @@ If numeric computation is required, respond ONLY as:
 {
   "action": "solve",
   "domain": "dc",
-  "endpoint": "/dc/kcl_kvl",
+  "endpoint": "/dc/kcl-kvl",
   "payload": {
     "equations": [],
     "variables": []
