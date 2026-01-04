@@ -78,42 +78,33 @@ async function sendMessage() {
       addMessage(decision.content, "ai");
       return;
     }
+ if (decision.action === "solve") {
+  addMessage("Solving using engineering laws…", "ai");
 
-    if (decision.action === "solve") {
-      addMessage("Solving using engineering laws…", "ai");
+  // ✅ FORCE CORRECT BACKEND ENDPOINT
+  const endpoint = "/dc/kcl-kvl";
 
-      /* ✅ DEFINE ENDPOINT PROPERLY */
-      let endpoint = decision.endpoint;
+  // 🔒 SANITIZE PAYLOAD
+  const payload = {
+    equations: Array.isArray(decision.payload?.equations)
+      ? decision.payload.equations
+      : [],
+    variables: Array.isArray(decision.payload?.variables)
+      ? decision.payload.variables
+      : []
+  };
 
-      // Normalize endpoint (safety)
-      if (endpoint === "/dc/kcl_kvl") {
-        endpoint = "/dc/kcl-kvl";
-      }
+  if (payload.equations.length === 0 || payload.variables.length === 0) {
+    throw new Error("Invalid solver payload");
+  }
 
-      /* 🔒 SANITIZE PAYLOAD */
-      const payload = {
-        equations: Array.isArray(decision.payload?.equations)
-          ? decision.payload.equations
-          : [],
-        variables: Array.isArray(decision.payload?.variables)
-          ? decision.payload.variables
-          : []
-      };
+  const solverResult = await callSolver(endpoint, payload);
 
-      if (payload.equations.length === 0 || payload.variables.length === 0) {
-        throw new Error("Invalid solver payload");
-      }
+  const explanation = await explainResult(userText, solverResult);
+  addMessage(explanation, "ai");
+  return;
+}
 
-      const solverResult = await callSolver(endpoint, payload);
-
-      const explanation = await explainResult(
-        userText,
-        solverResult
-      );
-
-      addMessage(explanation, "ai");
-      return;
-    }
 
     addMessage("I need more information to proceed.", "ai");
 
