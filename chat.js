@@ -5,7 +5,7 @@ const INPUT = document.getElementById("userInput");
    URLs (CONFIRMED)
 =========================== */
 const AI_PROXY_URL =
-  "https://surudmahajan12-electronics-ai-proxy.hf.space/chat";
+  "https://surudmahajan12-electronics-ai-proxy.hf.space/docs";
 
 const ELECTRONICS_BACKEND =
   "https://surudmahajan12-electronics.hf.space";
