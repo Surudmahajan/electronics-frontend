@@ -1,12 +1,6 @@
-/* ===========================
-   DOM ELEMENTS
-=========================== */
 const CHAT = document.getElementById("chat");
 const INPUT = document.getElementById("userInput");
 
-/* ===========================
-   BACKEND URLS
-=========================== */
 const AI_PROXY_URL =
   "https://surudmahajan12-electronics-ai-proxy.hf.space/chat";
 
@@ -14,8 +8,7 @@ const ELECTRONICS_BACKEND =
   "https://surudmahajan12-electronics.hf.space";
 
 /* ===========================
-   CANONICAL ROUTE MAP
-   (SINGLE SOURCE OF TRUTH)
+   ROUTES
 =========================== */
 const ROUTES = {
   dc: {
@@ -29,53 +22,9 @@ const ROUTES = {
     thevenin: "/dc/thevenin",
     norton: "/dc/norton",
     max_power: "/dc/max-power"
-  },
-
-  ac: {
-    waveform: "/ac/waveform",
-    impedance: "/ac/impedance",
-    rlc: "/ac/rlc",
-    power: "/ac/power",
-    resonance: "/ac/resonance"
-  },
-
-  machines: {
-    dc_motor: "/machines/dc-motor",
-    induction_motor: "/machines/induction-motor",
-    inverter: "/machines/inverter",
-    ups: "/machines/ups",
-    smps: "/machines/smps",
-    batteries: "/machines/batteries",
-    comparison: "/machines/comparison"
-  },
-
-  digital: {
-    convert: "/digital/convert",
-    binary_add: "/digital/binary-add",
-    binary_sub: "/digital/binary-sub",
-    bcd: "/digital/bcd",
-    gray: "/digital/gray"
-  },
-
-  logic: {
-    truth_table: "/logic/truth-table",
-    simplify: "/logic/simplify",
-    kmap: "/logic/kmap",
-    universal_gates: "/logic/universal-gates"
-  },
-
-  combinational: {
-    half_adder: "/combinational/half-adder",
-    full_adder: "/combinational/full-adder",
-    half_subtractor: "/combinational/half-subtractor",
-    full_subtractor: "/combinational/full-subtractor",
-    mux: "/combinational/mux",
-    demux: "/combinational/demux",
-    encoder: "/combinational/encoder",
-    decoder: "/combinational/decoder",
-    comparator: "/combinational/comparator"
   }
 };
+
 const OPERATION_ALIASES = {
   dc: {
     nodal_analysis: "nodal",
@@ -87,38 +36,33 @@ const OPERATION_ALIASES = {
 };
 
 /* ===========================
-   SYSTEM PROMPT (STRICT)
+   SYSTEM PROMPT
 =========================== */
 const SYSTEM_PROMPT = `
 You are an Electronics Engineering Assistant.
 
-STRICT RULES:
-- Respond ONLY in valid JSON.
-- NO explanations, NO markdown, NO extra text.
-- NEVER return URLs.
-- NEVER return raw math results.
-- Only choose domain and operation.
+Respond ONLY in valid JSON.
 
-Allowed domains:
-dc, ac, machines, digital, logic, combinational
-
-Response format for solving:
+For solving:
 {
   "action": "solve",
-  "domain": "<domain>",
-  "operation": "<operation>",
-  "payload": { }
+  "domain": "dc",
+  "operation": "nodal",
+  "payload": {
+    "equations": [],
+    "variables": []
+  }
 }
 
-Response format for theory:
+For theory:
 {
   "action": "explain",
-  "content": "<clear explanation>"
+  "content": "..."
 }
 `;
 
 /* ===========================
-   UI HELPERS
+   HELPERS
 =========================== */
 function addMessage(text, type) {
   const div = document.createElement("div");
@@ -128,44 +72,27 @@ function addMessage(text, type) {
   CHAT.scrollTop = CHAT.scrollHeight;
 }
 
+function normalizeOperation(op) {
+  return op.toLowerCase().replace(/-/g, "_").replace(/\s+/g, "_").trim();
+}
+
+function normalizeDomain(domain) {
+  if (domain.toLowerCase().includes("dc")) return "dc";
+  return domain.toLowerCase();
+}
+
+function extractVariables(equations) {
+  const vars = new Set();
+  equations.forEach(eq => {
+    const matches = eq.match(/[A-Za-z]+\d*/g);
+    if (matches) matches.forEach(v => vars.add(v));
+  });
+  return Array.from(vars);
+}
+
 /* ===========================
    MAIN FLOW
 =========================== */
-function normalizeOperation(op) {
-  return op
-    .toLowerCase()
-    .replace(/-/g, "_")
-    .replace(/\s+/g, "_")
-    .trim();
-}
-function extractVariables(equations) {
-  const vars = new Set();
-
-  equations.forEach(eq => {
-    const matches = eq.match(/[A-Za-z]+\d*/g);
-    if (matches) {
-      matches.forEach(v => {
-        if (!isNaN(v)) return;
-        vars.add(v);
-      });
-    }
-  });
-
-  return Array.from(vars);
-}
-function normalizeDomain(domain) {
-  domain = domain.toLowerCase();
-
-  if (domain.includes("dc")) return "dc";
-  if (domain.includes("ac")) return "ac";
-  if (domain.includes("machine")) return "machines";
-  if (domain.includes("digital")) return "digital";
-  if (domain.includes("logic")) return "logic";
-  if (domain.includes("combinational")) return "combinational";
-
-  return domain;
-}
-
 async function sendMessage() {
   const userText = INPUT.value.trim();
   if (!userText) return;
@@ -182,51 +109,37 @@ async function sendMessage() {
       return;
     }
 
-if (decision.action === "solve") {
-  addMessage("Solving using engineering laws…", "ai");
+    if (decision.action === "solve") {
+      addMessage("Solving using engineering laws…", "ai");
 
-let { domain, operation, payload } = decision;
+      let { domain, operation, payload } = decision;
 
-domain = normalizeDomain(domain);
-operation = normalizeOperation(operation);
+      domain = normalizeDomain(domain);
+      operation = normalizeOperation(operation);
 
-// apply alias if exists
-if (OPERATION_ALIASES[domain] && OPERATION_ALIASES[domain][operation]) {
-  operation = OPERATION_ALIASES[domain][operation];
-}
+      if (OPERATION_ALIASES[domain]?.[operation]) {
+        operation = OPERATION_ALIASES[domain][operation];
+      }
 
-if (!ROUTES[domain] || !ROUTES[domain][operation]) {
-  console.error("Resolved domain:", domain);
-  console.error("Resolved operation:", operation);
-  throw new Error("Unsupported domain or operation");
-}
+      if (!ROUTES[domain]?.[operation]) {
+        throw new Error("Unsupported domain or operation");
+      }
 
-const endpoint = ROUTES[domain][operation];
+      payload = payload || {};
+      payload.equations = payload.equations || [];
+      payload.variables =
+        payload.variables?.length
+          ? payload.variables
+          : extractVariables(payload.equations);
 
+      const solverResult = await callSolver(
+        ROUTES[domain][operation],
+        payload
+      );
 
-  // 🔒 ENSURE PAYLOAD STRUCTURE
-  payload = payload || {};
-  payload.equations = payload.equations || [];
-  payload.variables =
-    payload.variables && payload.variables.length
-      ? payload.variables
-      : extractVariables(payload.equations);
-
-  if (!payload.equations.length || !payload.variables.length) {
-    throw new Error("Incomplete solver payload");
-  }
-
-  const solverResult = await callSolver(endpoint, payload);
-
-  const formatted = formatResult(domain, normalizedOperation, solverResult);
-
-  addMessage(formatted, "ai");
-  return;
-}
-
-
-    addMessage("I need more information to proceed.", "ai");
-
+      const formatted = formatResult(domain, operation, solverResult);
+      addMessage(formatted, "ai");
+    }
   } catch (err) {
     console.error(err);
     addMessage(
@@ -237,7 +150,7 @@ const endpoint = ROUTES[domain][operation];
 }
 
 /* ===========================
-   AI DECISION CALL
+   AI CALL
 =========================== */
 async function callAI(userText) {
   const res = await fetch(AI_PROXY_URL, {
@@ -253,19 +166,8 @@ async function callAI(userText) {
     })
   });
 
-  if (!res.ok) {
-    throw new Error(await res.text());
-  }
-
   const data = await res.json();
-  const raw = data.choices[0].message.content;
-
-  const match = raw.match(/\{[\s\S]*\}/);
-  if (!match) {
-    throw new Error("Invalid AI JSON");
-  }
-
-  return JSON.parse(match[0]);
+  return JSON.parse(data.choices[0].message.content);
 }
 
 /* ===========================
@@ -278,53 +180,17 @@ async function callSolver(endpoint, payload) {
     body: JSON.stringify(payload)
   });
 
-  if (!res.ok) {
-    throw new Error(await res.text());
-  }
-
   return await res.json();
 }
 
 /* ===========================
-   RESULT FORMATTER
+   RESULT FORMAT
 =========================== */
 function formatResult(domain, operation, result) {
-  if (domain === "dc" && result.solution) {
-    let text = "The circuit was analyzed using DC network laws.\n\n";
-    text += "Calculated results:\n";
-
-    for (const [k, v] of Object.entries(result.solution)) {
-      text += `• ${k} = ${Number(v).toFixed(4)}\n`;
-    }
-
-    return text;
+  let text = "The circuit was analyzed using nodal analysis.\n\n";
+  for (const [k, v] of Object.entries(result.solution)) {
+    text += `• ${k} = ${Number(v).toFixed(4)} A\n`;
   }
-
-  if (domain === "ac") {
-    return "AC circuit analysis result:\n\n" +
-           JSON.stringify(result, null, 2);
-  }
-
-  if (domain === "digital") {
-    return "Digital logic result:\n\n" +
-           JSON.stringify(result, null, 2);
-  }
-
-  if (domain === "machines") {
-    return "Electrical machine analysis:\n\n" +
-           JSON.stringify(result, null, 2);
-  }
-
-  if (domain === "logic") {
-    return "Logic gate analysis:\n\n" +
-           JSON.stringify(result, null, 2);
-  }
-
-  if (domain === "combinational") {
-    return "Combinational circuit result:\n\n" +
-           JSON.stringify(result, null, 2);
-  }
-
-  return "Result:\n\n" + JSON.stringify(result, null, 2);
+  return text;
 }
 
