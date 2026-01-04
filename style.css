@@ -1,0 +1,28 @@
+body {
+    font-family: Arial, sans-serif;
+    padding: 20px;
+    background: #0f172a;
+    color: #e5e7eb;
+}
+
+select, textarea, button {
+    width: 100%;
+    margin: 10px 0;
+    padding: 8px;
+    background: #020617;
+    color: #e5e7eb;
+    border: 1px solid #334155;
+}
+
+button {
+    cursor: pointer;
+    background: #2563eb;
+    border: none;
+}
+
+pre {
+    background: #020617;
+    padding: 10px;
+    border: 1px solid #334155;
+    overflow-x: auto;
+}
