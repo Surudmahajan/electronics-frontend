@@ -1,6 +1,9 @@
 const CHAT = document.getElementById("chat");
 const INPUT = document.getElementById("userInput");
 
+/* ===========================
+   URLs (CONFIRMED)
+=========================== */
 const AI_PROXY_URL =
   "https://surudmahajan12-electronics-ai-proxy.hf.space/chat";
 
@@ -8,20 +11,18 @@ const ELECTRONICS_BACKEND =
   "https://surudmahajan12-electronics.hf.space";
 
 /* ===========================
-   SYSTEM PROMPT (LOCKED)
+   SYSTEM PROMPT (STRICT)
 =========================== */
 const SYSTEM_PROMPT = `
 You are an Electronics Engineering Assistant.
 
-Rules:
-- You NEVER compute final numeric answers yourself.
-- If the user asks for numeric results (current, voltage, power, impedance, etc),
-  you MUST request a solver call.
-- If the question is conceptual, you may explain directly.
-- If information is missing, ask a clarification question.
-- NEVER fabricate values.
+STRICT RULES (MANDATORY):
+- You MUST respond with ONLY valid JSON.
+- Do NOT include explanations, greetings, markdown, or extra text.
+- Do NOT include text before or after JSON.
+- Do NOT fabricate numeric values.
 
-If a solver is required, respond ONLY in JSON:
+If numeric computation is required, respond ONLY as:
 
 {
   "action": "solve",
@@ -33,11 +34,18 @@ If a solver is required, respond ONLY in JSON:
   }
 }
 
-Otherwise respond ONLY in JSON:
+If the question is conceptual, respond ONLY as:
 
 {
   "action": "explain",
   "content": "..."
+}
+
+If information is missing, respond ONLY as:
+
+{
+  "action": "explain",
+  "content": "Please provide the missing information."
 }
 `;
 
@@ -88,14 +96,18 @@ async function sendMessage() {
     }
 
     addMessage("I need more information to proceed.", "ai");
+
   } catch (err) {
-    addMessage("Something went wrong. Please try again.", "ai");
     console.error(err);
+    addMessage(
+      "I couldn’t process that request. Please rephrase or provide clearer equations.",
+      "ai"
+    );
   }
 }
 
 /* ===========================
-   AI CALL (DECISION)
+   AI CALL (SAFE JSON)
 =========================== */
 async function callAI(userText) {
   const res = await fetch(AI_PROXY_URL, {
@@ -112,7 +124,18 @@ async function callAI(userText) {
   });
 
   const data = await res.json();
-  return JSON.parse(data.choices[0].message.content);
+  const raw = data.choices[0].message.content;
+
+  // 🔒 SAFE JSON EXTRACTION
+  const start = raw.indexOf("{");
+  const end = raw.lastIndexOf("}");
+
+  if (start === -1 || end === -1) {
+    throw new Error("AI did not return valid JSON");
+  }
+
+  const jsonString = raw.slice(start, end + 1);
+  return JSON.parse(jsonString);
 }
 
 /* ===========================
