@@ -5,7 +5,7 @@ const INPUT = document.getElementById("userInput");
    URLs (CONFIRMED)
 =========================== */
 const AI_PROXY_URL =
-  "https://surudmahajan12-electronics-ai-proxy.hf.space/docs";
+  "https://surudmahajan12-electronics-ai-proxy.hf.space/chat";
 
 const ELECTRONICS_BACKEND =
   "https://surudmahajan12-electronics.hf.space";
@@ -121,18 +121,27 @@ async function callAI(userText) {
     })
   });
 
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error("AI proxy error: " + text);
+  }
+
   const data = await res.json();
+
+  if (!data.choices || !data.choices.length) {
+    throw new Error("Invalid AI response: " + JSON.stringify(data));
+  }
+
   const raw = data.choices[0].message.content;
 
-  // 🔒 HARD JSON EXTRACTION (LLM-SAFE)
   const match = raw.match(/\{[\s\S]*\}/);
-
   if (!match) {
-    throw new Error("AI did not return JSON");
+    throw new Error("AI did not return JSON: " + raw);
   }
 
   return JSON.parse(match[0]);
 }
+
 
 
 
