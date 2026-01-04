@@ -1,8 +1,11 @@
+/* ===========================
+   DOM ELEMENTS
+=========================== */
 const CHAT = document.getElementById("chat");
 const INPUT = document.getElementById("userInput");
 
 /* ===========================
-   URLs (CONFIRMED)
+   BACKEND URLS
 =========================== */
 const AI_PROXY_URL =
   "https://surudmahajan12-electronics-ai-proxy.hf.space/chat";
@@ -11,39 +14,97 @@ const ELECTRONICS_BACKEND =
   "https://surudmahajan12-electronics.hf.space";
 
 /* ===========================
+   CANONICAL ROUTE MAP
+   (SINGLE SOURCE OF TRUTH)
+=========================== */
+const ROUTES = {
+  dc: {
+    kcl_kvl: "/dc/kcl-kvl",
+    series_parallel: "/dc/series-parallel",
+    voltage_divider: "/dc/voltage-divider",
+    current_divider: "/dc/current-divider",
+    mesh: "/dc/mesh",
+    nodal: "/dc/nodal",
+    superposition: "/dc/superposition",
+    thevenin: "/dc/thevenin",
+    norton: "/dc/norton",
+    max_power: "/dc/max-power"
+  },
+
+  ac: {
+    waveform: "/ac/waveform",
+    impedance: "/ac/impedance",
+    rlc: "/ac/rlc",
+    power: "/ac/power",
+    resonance: "/ac/resonance"
+  },
+
+  machines: {
+    dc_motor: "/machines/dc-motor",
+    induction_motor: "/machines/induction-motor",
+    inverter: "/machines/inverter",
+    ups: "/machines/ups",
+    smps: "/machines/smps",
+    batteries: "/machines/batteries",
+    comparison: "/machines/comparison"
+  },
+
+  digital: {
+    convert: "/digital/convert",
+    binary_add: "/digital/binary-add",
+    binary_sub: "/digital/binary-sub",
+    bcd: "/digital/bcd",
+    gray: "/digital/gray"
+  },
+
+  logic: {
+    truth_table: "/logic/truth-table",
+    simplify: "/logic/simplify",
+    kmap: "/logic/kmap",
+    universal_gates: "/logic/universal-gates"
+  },
+
+  combinational: {
+    half_adder: "/combinational/half-adder",
+    full_adder: "/combinational/full-adder",
+    half_subtractor: "/combinational/half-subtractor",
+    full_subtractor: "/combinational/full-subtractor",
+    mux: "/combinational/mux",
+    demux: "/combinational/demux",
+    encoder: "/combinational/encoder",
+    decoder: "/combinational/decoder",
+    comparator: "/combinational/comparator"
+  }
+};
+
+/* ===========================
    SYSTEM PROMPT (STRICT)
 =========================== */
 const SYSTEM_PROMPT = `
 You are an Electronics Engineering Assistant.
 
-STRICT RULES (MANDATORY):
+STRICT RULES:
 - Respond ONLY in valid JSON.
-- Do NOT include explanations, greetings, markdown, or extra text.
-- Do NOT include '=' in equations.
-- Every equation MUST be rearranged to the form: expression = 0
-- Send ONLY the LEFT-HAND expression.
+- NO explanations, NO markdown, NO extra text.
+- NEVER return URLs.
+- NEVER return raw math results.
+- Only choose domain and operation.
 
-Example:
-Input: 10*I1 + 5*(I1 - I2) = 20
-Output equation: "10*I1 + 5*(I1 - I2) - 20"
+Allowed domains:
+dc, ac, machines, digital, logic, combinational
 
-If numeric computation is required, respond ONLY as:
-
+Response format for solving:
 {
   "action": "solve",
-  "domain": "dc",
-  "endpoint": "/dc/kcl-kvl",
-  "payload": {
-    "equations": [],
-    "variables": []
-  }
+  "domain": "<domain>",
+  "operation": "<operation>",
+  "payload": { }
 }
 
-If the question is conceptual or missing information, respond ONLY as:
-
+Response format for theory:
 {
   "action": "explain",
-  "content": "..."
+  "content": "<clear explanation>"
 }
 `;
 
@@ -70,55 +131,45 @@ async function sendMessage() {
 
   try {
     const decision = await callAI(userText);
-
-    // 🔍 DEBUG (optional but useful)
     console.log("AI decision:", decision);
 
     if (decision.action === "explain") {
       addMessage(decision.content, "ai");
       return;
     }
- if (decision.action === "solve") {
-  addMessage("Solving using engineering laws…", "ai");
 
-  // ✅ FORCE CORRECT BACKEND ENDPOINT
-  const endpoint = "/dc/kcl-kvl";
+    if (decision.action === "solve") {
+      addMessage("Solving using engineering laws…", "ai");
 
-  // 🔒 SANITIZE PAYLOAD
-  const payload = {
-    equations: Array.isArray(decision.payload?.equations)
-      ? decision.payload.equations
-      : [],
-    variables: Array.isArray(decision.payload?.variables)
-      ? decision.payload.variables
-      : []
-  };
+      const { domain, operation, payload } = decision;
 
-  if (payload.equations.length === 0 || payload.variables.length === 0) {
-    throw new Error("Invalid solver payload");
-  }
+      if (!ROUTES[domain] || !ROUTES[domain][operation]) {
+        throw new Error("Unsupported domain or operation");
+      }
 
-  const solverResult = await callSolver(endpoint, payload);
+      const endpoint = ROUTES[domain][operation];
 
-  const explanation = await explainResult(userText, solverResult);
-  addMessage(explanation, "ai");
-  return;
-}
+      const solverResult = await callSolver(endpoint, payload);
 
+      const formatted = formatResult(domain, operation, solverResult);
+
+      addMessage(formatted, "ai");
+      return;
+    }
 
     addMessage("I need more information to proceed.", "ai");
 
   } catch (err) {
     console.error(err);
     addMessage(
-      "I couldn’t process that request. Please rephrase or provide clearer equations.",
+      "I couldn’t process that request. Please rephrase or provide clearer information.",
       "ai"
     );
   }
 }
 
 /* ===========================
-   AI CALL (SAFE JSON)
+   AI DECISION CALL
 =========================== */
 async function callAI(userText) {
   const res = await fetch(AI_PROXY_URL, {
@@ -135,28 +186,22 @@ async function callAI(userText) {
   });
 
   if (!res.ok) {
-    const text = await res.text();
-    throw new Error("AI proxy error: " + text);
+    throw new Error(await res.text());
   }
 
   const data = await res.json();
-
-  if (!data.choices || !data.choices.length) {
-    throw new Error("Invalid AI response: " + JSON.stringify(data));
-  }
-
   const raw = data.choices[0].message.content;
 
   const match = raw.match(/\{[\s\S]*\}/);
   if (!match) {
-    throw new Error("AI did not return JSON: " + raw);
+    throw new Error("Invalid AI JSON");
   }
 
   return JSON.parse(match[0]);
 }
 
 /* ===========================
-   CALL ELECTRONICS BACKEND
+   SOLVER CALL
 =========================== */
 async function callSolver(endpoint, payload) {
   const res = await fetch(ELECTRONICS_BACKEND + endpoint, {
@@ -166,50 +211,52 @@ async function callSolver(endpoint, payload) {
   });
 
   if (!res.ok) {
-    const text = await res.text();
-    throw new Error("Solver error: " + text);
+    throw new Error(await res.text());
   }
 
   return await res.json();
 }
 
 /* ===========================
-   AI EXPLANATION (2nd PASS)
+   RESULT FORMATTER
 =========================== */
-async function explainResult(question, result) {
-  const res = await fetch(AI_PROXY_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: "meta-llama/llama-3-8b-instruct",
-      messages: [
-        {
-          role: "system",
-          content:
-            "Explain the solution step by step in clear engineering language. " +
-            "Do NOT change numeric results."
-        },
-        {
-          role: "user",
-          content:
-            `Question: ${question}\nResult: ${JSON.stringify(result)}`
-        }
-      ],
-      temperature: 0
-    })
-  });
+function formatResult(domain, operation, result) {
+  if (domain === "dc" && result.solution) {
+    let text = "The circuit was analyzed using DC network laws.\n\n";
+    text += "Calculated results:\n";
 
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error("AI explain error: " + text);
+    for (const [k, v] of Object.entries(result.solution)) {
+      text += `• ${k} = ${Number(v).toFixed(4)}\n`;
+    }
+
+    return text;
   }
 
-  const data = await res.json();
-
-  if (!data.choices || !data.choices.length) {
-    throw new Error("Invalid explanation response: " + JSON.stringify(data));
+  if (domain === "ac") {
+    return "AC circuit analysis result:\n\n" +
+           JSON.stringify(result, null, 2);
   }
 
-  return data.choices[0].message.content;
+  if (domain === "digital") {
+    return "Digital logic result:\n\n" +
+           JSON.stringify(result, null, 2);
+  }
+
+  if (domain === "machines") {
+    return "Electrical machine analysis:\n\n" +
+           JSON.stringify(result, null, 2);
+  }
+
+  if (domain === "logic") {
+    return "Logic gate analysis:\n\n" +
+           JSON.stringify(result, null, 2);
+  }
+
+  if (domain === "combinational") {
+    return "Combinational circuit result:\n\n" +
+           JSON.stringify(result, null, 2);
+  }
+
+  return "Result:\n\n" + JSON.stringify(result, null, 2);
 }
 
