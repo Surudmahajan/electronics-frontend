@@ -9,28 +9,22 @@
 
 <h1>Electronics Engine</h1>
 
-<label>Engine</label>
-<select id="engine">
+<label>Domain</label>
+<select id="domain">
     <option value="dc">DC Circuits</option>
     <option value="ac">AC Circuits</option>
-    <option value="machines">Machines</option>
-    <option value="digital">Digital Basics</option>
-    <option value="logic">Logic</option>
-    <option value="combinational">Combinational</option>
 </select>
 
-<label>Endpoint</label>
-<select id="endpoint"></select>
+<label>Problem Type</label>
+<select id="problem"></select>
 
-<label>Request JSON</label>
-<textarea id="payload" rows="8">
-{}
-</textarea>
+<div id="inputs"></div>
 
-<button onclick="callAPI()">Run</button>
+<button onclick="solve()">Solve</button>
 
-<h2>Response</h2>
-<pre id="response"></pre>
+<h2>Result</h2>
+<pre id="output"></pre>
+
 
 <script src="script.js"></script>
 </body>
