@@ -122,6 +122,14 @@ function addMessage(text, type) {
 /* ===========================
    MAIN FLOW
 =========================== */
+function normalizeOperation(op) {
+  return op
+    .toLowerCase()
+    .replace(/-/g, "_")
+    .replace(/\s+/g, "_")
+    .trim();
+}
+
 async function sendMessage() {
   const userText = INPUT.value.trim();
   if (!userText) return;
@@ -141,13 +149,19 @@ async function sendMessage() {
     if (decision.action === "solve") {
       addMessage("Solving using engineering laws…", "ai");
 
-      const { domain, operation, payload } = decision;
+     const { domain, operation, payload } = decision;
 
-      if (!ROUTES[domain] || !ROUTES[domain][operation]) {
-        throw new Error("Unsupported domain or operation");
-      }
+const normalizedOperation = normalizeOperation(operation);
 
-      const endpoint = ROUTES[domain][operation];
+if (!ROUTES[domain] || !ROUTES[domain][normalizedOperation]) {
+  console.error("Domain:", domain);
+  console.error("Operation:", operation);
+  console.error("Normalized:", normalizedOperation);
+  throw new Error("Unsupported domain or operation");
+}
+
+const endpoint = ROUTES[domain][normalizedOperation];
+
 
       const solverResult = await callSolver(endpoint, payload);
 
