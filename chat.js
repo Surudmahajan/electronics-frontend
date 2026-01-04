@@ -77,9 +77,22 @@ function normalizeOperation(op) {
 }
 
 function normalizeDomain(domain) {
-  if (domain.toLowerCase().includes("dc")) return "dc";
-  return domain.toLowerCase();
+  if (!domain || typeof domain !== "string") {
+    return "dc"; // DEFAULT SAFE DOMAIN
+  }
+
+  domain = domain.toLowerCase();
+
+  if (domain.includes("dc")) return "dc";
+  if (domain.includes("ac")) return "ac";
+  if (domain.includes("machine")) return "machines";
+  if (domain.includes("digital")) return "digital";
+  if (domain.includes("logic")) return "logic";
+  if (domain.includes("combinational")) return "combinational";
+
+  return domain;
 }
+
 
 function extractVariables(equations) {
   const vars = new Set();
