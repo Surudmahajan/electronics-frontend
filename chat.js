@@ -129,6 +129,21 @@ function normalizeOperation(op) {
     .replace(/\s+/g, "_")
     .trim();
 }
+function extractVariables(equations) {
+  const vars = new Set();
+
+  equations.forEach(eq => {
+    const matches = eq.match(/[A-Za-z]+\d*/g);
+    if (matches) {
+      matches.forEach(v => {
+        if (!isNaN(v)) return;
+        vars.add(v);
+      });
+    }
+  });
+
+  return Array.from(vars);
+}
 
 async function sendMessage() {
   const userText = INPUT.value.trim();
@@ -146,30 +161,40 @@ async function sendMessage() {
       return;
     }
 
-    if (decision.action === "solve") {
-      addMessage("Solving using engineering laws…", "ai");
+if (decision.action === "solve") {
+  addMessage("Solving using engineering laws…", "ai");
 
-     const { domain, operation, payload } = decision;
+  const { domain, operation } = decision;
+  let { payload } = decision;
 
-const normalizedOperation = normalizeOperation(operation);
+  const normalizedOperation = normalizeOperation(operation);
 
-if (!ROUTES[domain] || !ROUTES[domain][normalizedOperation]) {
-  console.error("Domain:", domain);
-  console.error("Operation:", operation);
-  console.error("Normalized:", normalizedOperation);
-  throw new Error("Unsupported domain or operation");
+  if (!ROUTES[domain] || !ROUTES[domain][normalizedOperation]) {
+    throw new Error("Unsupported domain or operation");
+  }
+
+  const endpoint = ROUTES[domain][normalizedOperation];
+
+  // 🔒 ENSURE PAYLOAD STRUCTURE
+  payload = payload || {};
+  payload.equations = payload.equations || [];
+  payload.variables =
+    payload.variables && payload.variables.length
+      ? payload.variables
+      : extractVariables(payload.equations);
+
+  if (!payload.equations.length || !payload.variables.length) {
+    throw new Error("Incomplete solver payload");
+  }
+
+  const solverResult = await callSolver(endpoint, payload);
+
+  const formatted = formatResult(domain, normalizedOperation, solverResult);
+
+  addMessage(formatted, "ai");
+  return;
 }
 
-const endpoint = ROUTES[domain][normalizedOperation];
-
-
-      const solverResult = await callSolver(endpoint, payload);
-
-      const formatted = formatResult(domain, operation, solverResult);
-
-      addMessage(formatted, "ai");
-      return;
-    }
 
     addMessage("I need more information to proceed.", "ai");
 
