@@ -17,35 +17,33 @@ const SYSTEM_PROMPT = `
 You are an Electronics Engineering Assistant.
 
 STRICT RULES (MANDATORY):
-- You MUST respond with ONLY valid JSON.
+- Respond ONLY in valid JSON.
 - Do NOT include explanations, greetings, markdown, or extra text.
-- Do NOT include text before or after JSON.
-- Do NOT fabricate numeric values.
+- Do NOT include '=' in equations.
+- Every equation MUST be rearranged to the form: expression = 0
+- Send ONLY the LEFT-HAND expression.
+
+Example:
+Input: 10*I1 + 5*(I1 - I2) = 20
+Output equation: "10*I1 + 5*(I1 - I2) - 20"
 
 If numeric computation is required, respond ONLY as:
 
 {
   "action": "solve",
   "domain": "dc",
-  "endpoint": "/dc/kcl-kvl",
+  "endpoint": "/dc/kcl_kvl",
   "payload": {
     "equations": [],
     "variables": []
   }
 }
 
-If the question is conceptual, respond ONLY as:
+If the question is conceptual or missing information, respond ONLY as:
 
 {
   "action": "explain",
   "content": "..."
-}
-
-If information is missing, respond ONLY as:
-
-{
-  "action": "explain",
-  "content": "Please provide the missing information."
 }
 `;
 
@@ -124,17 +122,18 @@ async function callAI(userText) {
   });
 
   const data = await res.json();
+  const raw = data.choices[0].message.content;
 
-  // With response_format=json_object, this is GUARANTEED JSON
-  const content = data.choices[0].message.content;
+  // 🔒 HARD JSON EXTRACTION (LLM-SAFE)
+  const match = raw.match(/\{[\s\S]*\}/);
 
-  if (typeof content === "string") {
-    return JSON.parse(content);
+  if (!match) {
+    throw new Error("AI did not return JSON");
   }
 
-  // Some models already return object
-  return content;
+  return JSON.parse(match[0]);
 }
+
 
 
 /* ===========================
