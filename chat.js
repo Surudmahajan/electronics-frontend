@@ -18,25 +18,90 @@ const ELECTRONICS_BACKEND =
 =========================== */
 const ROUTES = {
   dc: {
-    nodal: "/dc/nodal",
     kcl_kvl: "/dc/kcl-kvl",
-    mesh: "/dc/mesh",
     series_parallel: "/dc/series-parallel",
     voltage_divider: "/dc/voltage-divider",
     current_divider: "/dc/current-divider",
+    mesh: "/dc/mesh",
+    nodal: "/dc/nodal",
     superposition: "/dc/superposition",
     thevenin: "/dc/thevenin",
     norton: "/dc/norton",
     max_power: "/dc/max-power"
+  },
+
+  ac: {
+    waveform: "/ac/waveform",
+    impedance: "/ac/impedance",
+    rlc: "/ac/rlc",
+    power: "/ac/power",
+    resonance: "/ac/resonance"
+  },
+
+  machines: {
+    dc_motor: "/machines/dc-motor",
+    induction_motor: "/machines/induction-motor",
+    inverter: "/machines/inverter",
+    ups: "/machines/ups",
+    smps: "/machines/smps",
+    batteries: "/machines/batteries",
+    comparison: "/machines/comparison"
+  },
+
+  digital: {
+    convert: "/digital/convert",
+    binary_add: "/digital/binary-add",
+    binary_sub: "/digital/binary-sub",
+    bcd: "/digital/bcd",
+    gray: "/digital/gray"
+  },
+
+  logic: {
+    truth_table: "/logic/truth-table",
+    simplify: "/logic/simplify",
+    kmap: "/logic/kmap",
+    universal_gates: "/logic/universal-gates"
+  },
+
+  combinational: {
+    half_adder: "/combinational/half-adder",
+    full_adder: "/combinational/full-adder",
+    half_subtractor: "/combinational/half-subtractor",
+    full_subtractor: "/combinational/full-subtractor",
+    mux: "/combinational/mux",
+    demux: "/combinational/demux",
+    encoder: "/combinational/encoder",
+    decoder: "/combinational/decoder",
+    comparator: "/combinational/comparator"
   }
 };
 
 const OPERATION_ALIASES = {
   dc: {
-    nodal_analysis: "nodal",
-    nodal: "nodal",
     kcl: "kcl_kvl",
-    kvl: "kcl_kvl"
+    kvl: "kcl_kvl",
+    nodal_analysis: "nodal",
+    mesh_analysis: "mesh",
+    max_power_transfer: "max_power"
+  },
+
+  digital: {
+    add: "binary_add",
+    subtract: "binary_sub",
+    conversion: "convert"
+  },
+
+  logic: {
+    truth: "truth_table",
+    simplify_expression: "simplify",
+    k_map: "kmap"
+  },
+
+  combinational: {
+    halfadder: "half_adder",
+    fulladder: "full_adder",
+    mux: "mux",
+    demux: "demux"
   }
 };
 
@@ -130,6 +195,16 @@ async function sendMessage() {
     if (decision.action !== "solve") {
       throw new Error("Unknown AI action");
     }
+    // 🔹 DIGITAL DOMAIN HANDLING (NO EQUATIONS)
+if (domain === "digital") {
+  const solverResult = await callSolver(
+    ROUTES.digital[operation],
+    payload
+  );
+
+  addMessage(formatResult(domain, operation, solverResult), "ai");
+  return;
+}
 
     addMessage("Solving using engineering laws…", "ai");
 
