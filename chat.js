@@ -76,6 +76,15 @@ const ROUTES = {
     comparator: "/combinational/comparator"
   }
 };
+const OPERATION_ALIASES = {
+  dc: {
+    nodal_analysis: "nodal",
+    nodal: "nodal",
+    kcl: "kcl_kvl",
+    kvl: "kcl_kvl",
+    kcl_kvl: "kcl_kvl"
+  }
+};
 
 /* ===========================
    SYSTEM PROMPT (STRICT)
@@ -144,6 +153,18 @@ function extractVariables(equations) {
 
   return Array.from(vars);
 }
+function normalizeDomain(domain) {
+  domain = domain.toLowerCase();
+
+  if (domain.includes("dc")) return "dc";
+  if (domain.includes("ac")) return "ac";
+  if (domain.includes("machine")) return "machines";
+  if (domain.includes("digital")) return "digital";
+  if (domain.includes("logic")) return "logic";
+  if (domain.includes("combinational")) return "combinational";
+
+  return domain;
+}
 
 async function sendMessage() {
   const userText = INPUT.value.trim();
@@ -164,16 +185,24 @@ async function sendMessage() {
 if (decision.action === "solve") {
   addMessage("Solving using engineering laws…", "ai");
 
-  const { domain, operation } = decision;
-  let { payload } = decision;
+let { domain, operation, payload } = decision;
 
-  const normalizedOperation = normalizeOperation(operation);
+domain = normalizeDomain(domain);
+operation = normalizeOperation(operation);
 
-  if (!ROUTES[domain] || !ROUTES[domain][normalizedOperation]) {
-    throw new Error("Unsupported domain or operation");
-  }
+// apply alias if exists
+if (OPERATION_ALIASES[domain] && OPERATION_ALIASES[domain][operation]) {
+  operation = OPERATION_ALIASES[domain][operation];
+}
 
-  const endpoint = ROUTES[domain][normalizedOperation];
+if (!ROUTES[domain] || !ROUTES[domain][operation]) {
+  console.error("Resolved domain:", domain);
+  console.error("Resolved operation:", operation);
+  throw new Error("Unsupported domain or operation");
+}
+
+const endpoint = ROUTES[domain][operation];
+
 
   // 🔒 ENSURE PAYLOAD STRUCTURE
   payload = payload || {};
