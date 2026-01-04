@@ -1,98 +1,77 @@
 const BASE_URL = "https://surudmahajan12-electronics.hf.space";
 
-const endpoints = {
-    dc: [
-        "/dc/kcl-kvl",
-        "/dc/series-parallel",
-        "/dc/voltage-divider",
-        "/dc/current-divider",
-        "/dc/mesh",
-        "/dc/nodal",
-        "/dc/thevenin",
-        "/dc/norton",
-        "/dc/max-power"
-    ],
-    ac: [
-        "/ac/waveform",
-        "/ac/impedance",
-        "/ac/rlc",
-        "/ac/power",
-        "/ac/resonance"
-    ],
-    machines: [
-        "/machines/dc-motor",
-        "/machines/induction-motor",
-        "/machines/inverter",
-        "/machines/ups",
-        "/machines/smps",
-        "/machines/batteries",
-        "/machines/comparison"
-    ],
-    digital: [
-        "/digital/convert",
-        "/digital/binary-add",
-        "/digital/binary-sub",
-        "/digital/bcd",
-        "/digital/gray"
-    ],
-    logic: [
-        "/logic/truth-table",
-        "/logic/simplify",
-        "/logic/kmap",
-        "/logic/universal-gates"
-    ],
-    combinational: [
-        "/combinational/half-adder",
-        "/combinational/full-adder",
-        "/combinational/half-subtractor",
-        "/combinational/full-subtractor",
-        "/combinational/mux",
-        "/combinational/demux",
-        "/combinational/encoder",
-        "/combinational/decoder",
-        "/combinational/comparator"
-    ]
+const problems = {
+    dc: {
+        "KCL / KVL": {
+            endpoint: "/dc/kcl-kvl",
+            fields: [
+                { id: "eq1", label: "Equation 1" },
+                { id: "eq2", label: "Equation 2" },
+                { id: "vars", label: "Variables (comma separated)" }
+            ]
+        }
+    }
 };
 
-const engineSelect = document.getElementById("engine");
-const endpointSelect = document.getElementById("endpoint");
+const domainSelect = document.getElementById("domain");
+const problemSelect = document.getElementById("problem");
+const inputsDiv = document.getElementById("inputs");
 
-function loadEndpoints() {
-    endpointSelect.innerHTML = "";
-    endpoints[engineSelect.value].forEach(ep => {
+function loadProblems() {
+    problemSelect.innerHTML = "";
+    Object.keys(problems[domainSelect.value]).forEach(p => {
         const opt = document.createElement("option");
-        opt.value = ep;
-        opt.textContent = ep;
-        endpointSelect.appendChild(opt);
+        opt.value = p;
+        opt.textContent = p;
+        problemSelect.appendChild(opt);
+    });
+    loadInputs();
+}
+
+function loadInputs() {
+    inputsDiv.innerHTML = "";
+    const problem = problems[domainSelect.value][problemSelect.value];
+
+    problem.fields.forEach(f => {
+        const label = document.createElement("label");
+        label.textContent = f.label;
+
+        const input = document.createElement("input");
+        input.id = f.id;
+
+        inputsDiv.appendChild(label);
+        inputsDiv.appendChild(input);
     });
 }
 
-engineSelect.addEventListener("change", loadEndpoints);
-loadEndpoints();
+domainSelect.addEventListener("change", loadProblems);
+problemSelect.addEventListener("change", loadInputs);
 
-async function callAPI() {
-    const url = BASE_URL + endpointSelect.value;
-    const payload = document.getElementById("payload").value;
+loadProblems();
 
-    const method = endpointSelect.value.includes("dc-motor") ||
-                   endpointSelect.value.includes("comparison") ||
-                   endpointSelect.value.includes("batteries") ||
-                   endpointSelect.value.includes("universal-gates")
-                   ? "GET"
-                   : "POST";
+async function solve() {
+    const problem = problems[domainSelect.value][problemSelect.value];
 
-    const options = {
-        method: method,
-        headers: { "Content-Type": "application/json" }
-    };
+    const equations = [
+        document.getElementById("eq1").value,
+        document.getElementById("eq2").value
+    ];
 
-    if (method === "POST") {
-        options.body = payload;
-    }
+    const variables = document
+        .getElementById("vars")
+        .value.split(",")
+        .map(v => v.trim());
 
-    const res = await fetch(url, options);
+    const payload = { equations, variables };
+
+    const res = await fetch(BASE_URL + problem.endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+    });
+
     const data = await res.json();
-
-    document.getElementById("response").textContent =
+    document.getElementById("output").textContent =
         JSON.stringify(data, null, 2);
 }
+
