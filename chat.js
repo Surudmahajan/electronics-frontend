@@ -79,10 +79,22 @@ async function sendMessage() {
     if (decision.action === "solve") {
       addMessage("Solving using engineering laws…", "ai");
 
-      const solverResult = await callSolver(
-        decision.endpoint,
-        decision.payload
-      );
+    // 🔒 SANITIZE PAYLOAD BEFORE SOLVER CALL
+const payload = {
+  equations: Array.isArray(decision.payload.equations)
+    ? decision.payload.equations
+    : [],
+  variables: Array.isArray(decision.payload.variables)
+    ? decision.payload.variables
+    : []
+};
+
+if (payload.equations.length === 0 || payload.variables.length === 0) {
+  throw new Error("Invalid solver payload");
+}
+
+const solverResult = await callSolver(endpoint, payload);
+
 
       const explanation = await explainResult(
         userText,
