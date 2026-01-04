@@ -155,8 +155,14 @@ async function callSolver(endpoint, payload) {
     body: JSON.stringify(payload)
   });
 
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error("Solver error: " + text);
+  }
+
   return await res.json();
 }
+
 
 /* ===========================
    AI EXPLANATION (2nd PASS)
@@ -184,6 +190,17 @@ async function explainResult(question, result) {
     })
   });
 
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error("AI explain error: " + text);
+  }
+
   const data = await res.json();
+
+  if (!data.choices || !data.choices.length) {
+    throw new Error("Invalid explanation response: " + JSON.stringify(data));
+  }
+
   return data.choices[0].message.content;
 }
+
