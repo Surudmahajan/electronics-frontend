@@ -71,6 +71,9 @@ async function sendMessage() {
   try {
     const decision = await callAI(userText);
 
+    // 🔍 DEBUG (optional but useful)
+    console.log("AI decision:", decision);
+
     if (decision.action === "explain") {
       addMessage(decision.content, "ai");
       return;
@@ -79,22 +82,29 @@ async function sendMessage() {
     if (decision.action === "solve") {
       addMessage("Solving using engineering laws…", "ai");
 
-    // 🔒 SANITIZE PAYLOAD BEFORE SOLVER CALL
-const payload = {
-  equations: Array.isArray(decision.payload.equations)
-    ? decision.payload.equations
-    : [],
-  variables: Array.isArray(decision.payload.variables)
-    ? decision.payload.variables
-    : []
-};
+      /* ✅ DEFINE ENDPOINT PROPERLY */
+      let endpoint = decision.endpoint;
 
-if (payload.equations.length === 0 || payload.variables.length === 0) {
-  throw new Error("Invalid solver payload");
-}
+      // Normalize endpoint (safety)
+      if (endpoint === "/dc/kcl_kvl") {
+        endpoint = "/dc/kcl-kvl";
+      }
 
-const solverResult = await callSolver(endpoint, payload);
+      /* 🔒 SANITIZE PAYLOAD */
+      const payload = {
+        equations: Array.isArray(decision.payload?.equations)
+          ? decision.payload.equations
+          : [],
+        variables: Array.isArray(decision.payload?.variables)
+          ? decision.payload.variables
+          : []
+      };
 
+      if (payload.equations.length === 0 || payload.variables.length === 0) {
+        throw new Error("Invalid solver payload");
+      }
+
+      const solverResult = await callSolver(endpoint, payload);
 
       const explanation = await explainResult(
         userText,
@@ -154,9 +164,6 @@ async function callAI(userText) {
   return JSON.parse(match[0]);
 }
 
-
-
-
 /* ===========================
    CALL ELECTRONICS BACKEND
 =========================== */
@@ -174,7 +181,6 @@ async function callSolver(endpoint, payload) {
 
   return await res.json();
 }
-
 
 /* ===========================
    AI EXPLANATION (2nd PASS)
