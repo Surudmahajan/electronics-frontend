@@ -1,31 +1,30 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Electronics Engine Frontend</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <title>Electronics AI Engine</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
-<h1>Electronics Engine</h1>
+<div class="app">
+  <div class="header">
+    ⚡ Electronics AI Engine
+  </div>
 
-<label>Domain</label>
-<select id="domain">
-    <option value="dc">DC Circuits</option>
-    <option value="ac">AC Circuits</option>
-</select>
+  <div id="chat" class="chat"></div>
 
-<label>Problem Type</label>
-<select id="problem"></select>
+  <div class="input-area">
+    <input
+      id="userInput"
+      type="text"
+      placeholder="Ask an electronics question (DC, AC, Digital...)"
+      autocomplete="off"
+    />
+    <button onclick="sendMessage()">Send</button>
+  </div>
+</div>
 
-<div id="inputs"></div>
-
-<button onclick="solve()">Solve</button>
-
-<h2>Result</h2>
-<pre id="output"></pre>
-
-
-<script src="script.js"></script>
+<script src="chat.js"></script>
 </body>
 </html>
