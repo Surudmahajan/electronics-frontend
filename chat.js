@@ -199,8 +199,19 @@ async function callSolver(endpoint, payload) {
     body: JSON.stringify(payload)
   });
 
-  return await res.json();
+  const text = await res.text();
+
+  if (!res.ok) {
+    throw new Error("Solver failed: " + text);
+  }
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new Error("Solver returned non-JSON: " + text);
+  }
 }
+
 
 /* ===========================
    RESULT FORMATTER (HUMAN)
