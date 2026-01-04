@@ -80,6 +80,7 @@ const OPERATION_ALIASES = {
   dc: {
     kcl: "kcl_kvl",
     kvl: "kcl_kvl",
+    kcl_and_kvl: "kcl_kvl",
     nodal_analysis: "nodal",
     mesh_analysis: "mesh",
     max_power_transfer: "max_power"
