@@ -112,7 +112,7 @@ async function callAI(userText) {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      model: "mistralai/mistral-7b-instruct",
+      model: "meta-llama/llama-3-8b-instruct",
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
         { role: "user", content: userText }
@@ -172,7 +172,7 @@ async function explainResult(question, result) {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      model: "mistralai/mistral-7b-instruct",
+      model: "meta-llama/llama-3-8b-instruct",
       messages: [
         {
           role: "system",
