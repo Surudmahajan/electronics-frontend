@@ -73,8 +73,15 @@ function addMessage(text, type) {
 }
 
 function normalizeOperation(op) {
-  return op.toLowerCase().replace(/-/g, "_").replace(/\s+/g, "_").trim();
+  if (typeof op !== "string") return null;
+
+  return op
+    .toLowerCase()
+    .replace(/-/g, "_")
+    .replace(/\s+/g, "_")
+    .trim();
 }
+
 
 function normalizeDomain(domain) {
   if (!domain || typeof domain !== "string") {
@@ -122,37 +129,57 @@ async function sendMessage() {
       return;
     }
 
-    if (decision.action === "solve") {
-      addMessage("Solving using engineering laws…", "ai");
+  if (decision.action === "solve") {
+  addMessage("Solving using engineering laws…", "ai");
 
-      let { domain, operation, payload } = decision;
+  // HARD DEFAULTS
+  let domain = typeof decision.domain === "string" ? decision.domain : "dc";
+  let operation =
+    typeof decision.operation === "string"
+      ? decision.operation
+      : "nodal";
 
-      domain = normalizeDomain(domain);
-      operation = normalizeOperation(operation);
+  let payload = decision.payload || {};
 
-      if (OPERATION_ALIASES[domain]?.[operation]) {
-        operation = OPERATION_ALIASES[domain][operation];
-      }
+  domain = normalizeDomain(domain);
+  operation = normalizeOperation(operation);
 
-      if (!ROUTES[domain]?.[operation]) {
-        throw new Error("Unsupported domain or operation");
-      }
+  if (!operation) {
+    throw new Error("Operation missing from AI response");
+  }
 
-      payload = payload || {};
-      payload.equations = payload.equations || [];
-      payload.variables =
-        payload.variables?.length
-          ? payload.variables
-          : extractVariables(payload.equations);
+  // Alias resolution
+  if (OPERATION_ALIASES[domain]?.[operation]) {
+    operation = OPERATION_ALIASES[domain][operation];
+  }
 
-      const solverResult = await callSolver(
-        ROUTES[domain][operation],
-        payload
-      );
+  if (!ROUTES[domain] || !ROUTES[domain][operation]) {
+    console.error("Resolved domain:", domain);
+    console.error("Resolved operation:", operation);
+    throw new Error("Unsupported domain or operation");
+  }
 
-      const formatted = formatResult(domain, operation, solverResult);
-      addMessage(formatted, "ai");
-    }
+  payload.equations = Array.isArray(payload.equations)
+    ? payload.equations
+    : [];
+
+  payload.variables = Array.isArray(payload.variables) && payload.variables.length
+    ? payload.variables
+    : extractVariables(payload.equations);
+
+  if (!payload.equations.length || !payload.variables.length) {
+    throw new Error("Incomplete solver payload");
+  }
+
+  const solverResult = await callSolver(
+    ROUTES[domain][operation],
+    payload
+  );
+
+  addMessage(formatResult(domain, operation, solverResult), "ai");
+  return;
+}
+
   } catch (err) {
     console.error(err);
     addMessage(
