@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Electronics Engine Frontend</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<h1>Electronics Engine</h1>
+
+<label>Engine</label>
+<select id="engine">
+    <option value="dc">DC Circuits</option>
+    <option value="ac">AC Circuits</option>
+    <option value="machines">Machines</option>
+    <option value="digital">Digital Basics</option>
+    <option value="logic">Logic</option>
+    <option value="combinational">Combinational</option>
+</select>
+
+<label>Endpoint</label>
+<select id="endpoint"></select>
+
+<label>Request JSON</label>
+<textarea id="payload" rows="8">
+{}
+</textarea>
+
+<button onclick="callAPI()">Run</button>
+
+<h2>Response</h2>
+<pre id="response"></pre>
+
+<script src="script.js"></script>
+</body>
+</html>
