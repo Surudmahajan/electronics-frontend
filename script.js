@@ -16,21 +16,33 @@ const problems = {
 const domainSelect = document.getElementById("domain");
 const problemSelect = document.getElementById("problem");
 const inputsDiv = document.getElementById("inputs");
+const output = document.getElementById("output");
 
 function loadProblems() {
     problemSelect.innerHTML = "";
-    Object.keys(problems[domainSelect.value]).forEach(p => {
+
+    const domainProblems = problems[domainSelect.value];
+    const keys = Object.keys(domainProblems);
+
+    keys.forEach((p, index) => {
         const opt = document.createElement("option");
         opt.value = p;
         opt.textContent = p;
         problemSelect.appendChild(opt);
+
+        if (index === 0) {
+            problemSelect.value = p; // force first selection
+        }
     });
-    loadInputs();
+
+    loadInputs(); // now safe
 }
 
 function loadInputs() {
     inputsDiv.innerHTML = "";
-    const problem = problems[domainSelect.value][problemSelect.value];
+
+    const problem =
+        problems[domainSelect.value][problemSelect.value];
 
     problem.fields.forEach(f => {
         const label = document.createElement("label");
@@ -38,6 +50,7 @@ function loadInputs() {
 
         const input = document.createElement("input");
         input.id = f.id;
+        input.placeholder = f.label;
 
         inputsDiv.appendChild(label);
         inputsDiv.appendChild(input);
@@ -47,11 +60,10 @@ function loadInputs() {
 domainSelect.addEventListener("change", loadProblems);
 problemSelect.addEventListener("change", loadInputs);
 
+// INITIAL LOAD
 loadProblems();
 
 async function solve() {
-    const problem = problems[domainSelect.value][problemSelect.value];
-
     const equations = [
         document.getElementById("eq1").value,
         document.getElementById("eq2").value
@@ -64,14 +76,17 @@ async function solve() {
 
     const payload = { equations, variables };
 
-    const res = await fetch(BASE_URL + problem.endpoint, {
+    const endpoint =
+        problems[domainSelect.value][problemSelect.value].endpoint;
+
+    const res = await fetch(BASE_URL + endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
     });
 
     const data = await res.json();
-    document.getElementById("output").textContent =
-        JSON.stringify(data, null, 2);
+    output.textContent = JSON.stringify(data, null, 2);
 }
+
 
