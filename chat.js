@@ -1,6 +1,12 @@
+/* ===========================
+   DOM ELEMENTS
+=========================== */
 const CHAT = document.getElementById("chat");
 const INPUT = document.getElementById("userInput");
 
+/* ===========================
+   BACKEND URLS
+=========================== */
 const AI_PROXY_URL =
   "https://surudmahajan12-electronics-ai-proxy.hf.space/chat";
 
@@ -8,16 +14,16 @@ const ELECTRONICS_BACKEND =
   "https://surudmahajan12-electronics.hf.space";
 
 /* ===========================
-   ROUTES
+   ROUTES (CANONICAL)
 =========================== */
 const ROUTES = {
   dc: {
+    nodal: "/dc/nodal",
     kcl_kvl: "/dc/kcl-kvl",
+    mesh: "/dc/mesh",
     series_parallel: "/dc/series-parallel",
     voltage_divider: "/dc/voltage-divider",
     current_divider: "/dc/current-divider",
-    mesh: "/dc/mesh",
-    nodal: "/dc/nodal",
     superposition: "/dc/superposition",
     thevenin: "/dc/thevenin",
     norton: "/dc/norton",
@@ -30,31 +36,32 @@ const OPERATION_ALIASES = {
     nodal_analysis: "nodal",
     nodal: "nodal",
     kcl: "kcl_kvl",
-    kvl: "kcl_kvl",
-    kcl_kvl: "kcl_kvl"
+    kvl: "kcl_kvl"
   }
 };
 
 /* ===========================
-   SYSTEM PROMPT
+   SYSTEM PROMPT (AI = DECISION ONLY)
 =========================== */
 const SYSTEM_PROMPT = `
 You are an Electronics Engineering Assistant.
 
 Respond ONLY in valid JSON.
 
-For solving:
+DO NOT extract equations.
+DO NOT extract variables.
+DO NOT perform math.
+
+Only decide domain and operation.
+
+Solve response:
 {
   "action": "solve",
   "domain": "dc",
-  "operation": "nodal",
-  "payload": {
-    "equations": [],
-    "variables": []
-  }
+  "operation": "nodal"
 }
 
-For theory:
+Theory response:
 {
   "action": "explain",
   "content": "..."
@@ -62,7 +69,7 @@ For theory:
 `;
 
 /* ===========================
-   HELPERS
+   UI HELPERS
 =========================== */
 function addMessage(text, type) {
   const div = document.createElement("div");
@@ -72,34 +79,15 @@ function addMessage(text, type) {
   CHAT.scrollTop = CHAT.scrollHeight;
 }
 
-function normalizeOperation(op) {
-  if (typeof op !== "string") return null;
-
-  return op
-    .toLowerCase()
-    .replace(/-/g, "_")
-    .replace(/\s+/g, "_")
-    .trim();
+/* ===========================
+   EXTRACTION HELPERS (KEY FIX)
+=========================== */
+function extractEquations(text) {
+  return text
+    .split("\n")
+    .map(l => l.trim())
+    .filter(l => /[A-Za-z]\d*\s*[\+\-\*\/]/.test(l));
 }
-
-
-function normalizeDomain(domain) {
-  if (!domain || typeof domain !== "string") {
-    return "dc"; // DEFAULT SAFE DOMAIN
-  }
-
-  domain = domain.toLowerCase();
-
-  if (domain.includes("dc")) return "dc";
-  if (domain.includes("ac")) return "ac";
-  if (domain.includes("machine")) return "machines";
-  if (domain.includes("digital")) return "digital";
-  if (domain.includes("logic")) return "logic";
-  if (domain.includes("combinational")) return "combinational";
-
-  return domain;
-}
-
 
 function extractVariables(equations) {
   const vars = new Set();
@@ -110,8 +98,18 @@ function extractVariables(equations) {
   return Array.from(vars);
 }
 
+function normalizeDomain(domain) {
+  if (!domain || typeof domain !== "string") return "dc";
+  return domain.toLowerCase().includes("dc") ? "dc" : "dc";
+}
+
+function normalizeOperation(op) {
+  if (!op || typeof op !== "string") return null;
+  return op.toLowerCase().replace(/\s+/g, "_");
+}
+
 /* ===========================
-   MAIN FLOW
+   MAIN FLOW (STABLE)
 =========================== */
 async function sendMessage() {
   const userText = INPUT.value.trim();
@@ -129,68 +127,49 @@ async function sendMessage() {
       return;
     }
 
-  if (decision.action === "solve") {
-  addMessage("Solving using engineering laws…", "ai");
+    if (decision.action !== "solve") {
+      throw new Error("Unknown AI action");
+    }
 
-  // HARD DEFAULTS
-  let domain = typeof decision.domain === "string" ? decision.domain : "dc";
-  let operation =
-    typeof decision.operation === "string"
-      ? decision.operation
-      : "nodal";
+    addMessage("Solving using engineering laws…", "ai");
 
-  let payload = decision.payload || {};
+    // 🧠 FRONTEND DOES EXTRACTION (FINAL FIX)
+    const equations = extractEquations(userText);
+    const variables = extractVariables(equations);
 
-  domain = normalizeDomain(domain);
-  operation = normalizeOperation(operation);
+    if (!equations.length || !variables.length) {
+      throw new Error("No equations or variables detected");
+    }
 
-  if (!operation) {
-    throw new Error("Operation missing from AI response");
-  }
+    let domain = normalizeDomain(decision.domain);
+    let operation = normalizeOperation(decision.operation);
 
-  // Alias resolution
-  if (OPERATION_ALIASES[domain]?.[operation]) {
-    operation = OPERATION_ALIASES[domain][operation];
-  }
+    if (OPERATION_ALIASES[domain]?.[operation]) {
+      operation = OPERATION_ALIASES[domain][operation];
+    }
 
-  if (!ROUTES[domain] || !ROUTES[domain][operation]) {
-    console.error("Resolved domain:", domain);
-    console.error("Resolved operation:", operation);
-    throw new Error("Unsupported domain or operation");
-  }
+    if (!ROUTES[domain]?.[operation]) {
+      throw new Error("Unsupported operation");
+    }
 
-  payload.equations = Array.isArray(payload.equations)
-    ? payload.equations
-    : [];
+    const solverResult = await callSolver(
+      ROUTES[domain][operation],
+      { equations, variables }
+    );
 
-  payload.variables = Array.isArray(payload.variables) && payload.variables.length
-    ? payload.variables
-    : extractVariables(payload.equations);
-
-  if (!payload.equations.length || !payload.variables.length) {
-    throw new Error("Incomplete solver payload");
-  }
-
-  const solverResult = await callSolver(
-    ROUTES[domain][operation],
-    payload
-  );
-
-  addMessage(formatResult(domain, operation, solverResult), "ai");
-  return;
-}
+    addMessage(formatResult(solverResult), "ai");
 
   } catch (err) {
     console.error(err);
     addMessage(
-      "I couldn’t process that request. Please rephrase or provide clearer information.",
+      "I couldn’t process that request. Please rephrase or provide clearer equations.",
       "ai"
     );
   }
 }
 
 /* ===========================
-   AI CALL
+   AI CALL (SAFE)
 =========================== */
 async function callAI(userText) {
   const res = await fetch(AI_PROXY_URL, {
@@ -224,12 +203,14 @@ async function callSolver(endpoint, payload) {
 }
 
 /* ===========================
-   RESULT FORMAT
+   RESULT FORMATTER (HUMAN)
 =========================== */
-function formatResult(domain, operation, result) {
-  let text = "The circuit was analyzed using nodal analysis.\n\n";
+function formatResult(result) {
+  if (!result.solution) return "Solution computed.";
+
+  let text = "✅ Solution:\n\n";
   for (const [k, v] of Object.entries(result.solution)) {
-    text += `• ${k} = ${Number(v).toFixed(4)} A\n`;
+    text += `${k} = ${Number(v).toFixed(4)} A\n`;
   }
   return text;
 }
