@@ -14,20 +14,28 @@ const ELECTRONICS_BACKEND =
   "https://surudmahajan12-electronics.hf.space";
 
 /* ===========================
-   ROUTES (CANONICAL)
+   CANONICAL ROUTES (FULL)
 =========================== */
 const ROUTES = {
   dc: {
+    nodal: "/dc/nodal",
     kcl_kvl: "/dc/kcl-kvl",
+    mesh: "/dc/mesh",
     series_parallel: "/dc/series-parallel",
     voltage_divider: "/dc/voltage-divider",
     current_divider: "/dc/current-divider",
-    mesh: "/dc/mesh",
-    nodal: "/dc/nodal",
     superposition: "/dc/superposition",
     thevenin: "/dc/thevenin",
     norton: "/dc/norton",
     max_power: "/dc/max-power"
+  },
+
+  digital: {
+    convert: "/digital/convert",
+    binary_add: "/digital/binary-add",
+    binary_sub: "/digital/binary-sub",
+    bcd: "/digital/bcd",
+    gray: "/digital/gray"
   },
 
   ac: {
@@ -46,14 +54,6 @@ const ROUTES = {
     smps: "/machines/smps",
     batteries: "/machines/batteries",
     comparison: "/machines/comparison"
-  },
-
-  digital: {
-    convert: "/digital/convert",
-    binary_add: "/digital/binary-add",
-    binary_sub: "/digital/binary-sub",
-    bcd: "/digital/bcd",
-    gray: "/digital/gray"
   },
 
   logic: {
@@ -76,58 +76,42 @@ const ROUTES = {
   }
 };
 
+/* ===========================
+   OPERATION ALIASES
+=========================== */
 const OPERATION_ALIASES = {
   dc: {
-    kcl: "kcl_kvl",
-    kvl: "kcl_kvl",
-    kcl_and_kvl: "kcl_kvl",
     nodal_analysis: "nodal",
-    mesh_analysis: "mesh",
-    max_power_transfer: "max_power"
+    nodal: "nodal",
+    kcl: "kcl_kvl",
+    kvl: "kcl_kvl"
   },
-
   digital: {
-    add: "binary_add",
-    subtract: "binary_sub",
-    conversion: "convert"
-  },
-
-  logic: {
-    truth: "truth_table",
-    simplify_expression: "simplify",
-    k_map: "kmap"
-  },
-
-  combinational: {
-    halfadder: "half_adder",
-    fulladder: "full_adder",
-    mux: "mux",
-    demux: "demux"
+    binary_addition: "binary_add",
+    binary_subtraction: "binary_sub"
   }
 };
 
 /* ===========================
-   SYSTEM PROMPT (AI = DECISION ONLY)
+   SYSTEM PROMPT (DECISION ONLY)
 =========================== */
 const SYSTEM_PROMPT = `
 You are an Electronics Engineering Assistant.
 
-Respond ONLY in valid JSON.
+Return ONLY valid JSON.
 
-DO NOT extract equations.
-DO NOT extract variables.
-DO NOT perform math.
-
-Only decide domain and operation.
+Do NOT extract equations.
+Do NOT compute.
+Do NOT explain unless asked.
 
 Solve response:
 {
   "action": "solve",
-  "domain": "dc",
-  "operation": "nodal"
+  "domain": "<dc|ac|digital|machines|logic|combinational>",
+  "operation": "<operation>"
 }
 
-Theory response:
+Explain response:
 {
   "action": "explain",
   "content": "..."
@@ -135,7 +119,7 @@ Theory response:
 `;
 
 /* ===========================
-   UI HELPERS
+   UI
 =========================== */
 function addMessage(text, type) {
   const div = document.createElement("div");
@@ -146,7 +130,22 @@ function addMessage(text, type) {
 }
 
 /* ===========================
-   EXTRACTION HELPERS (KEY FIX)
+   NORMALIZATION
+=========================== */
+function normalizeDomain(domain) {
+  if (typeof domain !== "string") return "dc";
+  domain = domain.toLowerCase();
+  if (ROUTES[domain]) return domain;
+  return "dc";
+}
+
+function normalizeOperation(op) {
+  if (typeof op !== "string") return null;
+  return op.toLowerCase().replace(/\s+/g, "_");
+}
+
+/* ===========================
+   EXTRACTION (FRONTEND)
 =========================== */
 function extractEquations(text) {
   return text
@@ -164,18 +163,8 @@ function extractVariables(equations) {
   return Array.from(vars);
 }
 
-function normalizeDomain(domain) {
-  if (!domain || typeof domain !== "string") return "dc";
-  return domain.toLowerCase().includes("dc") ? "dc" : "dc";
-}
-
-function normalizeOperation(op) {
-  if (!op || typeof op !== "string") return null;
-  return op.toLowerCase().replace(/\s+/g, "_");
-}
-
 /* ===========================
-   MAIN FLOW (STABLE)
+   MAIN FLOW (FAIL-SAFE)
 =========================== */
 async function sendMessage() {
   const userText = INPUT.value.trim();
@@ -186,37 +175,21 @@ async function sendMessage() {
 
   try {
     const decision = await callAI(userText);
-    console.log("AI decision:", decision);
+
+    if (!decision || typeof decision !== "object") {
+      throw new Error("Invalid AI response");
+    }
 
     if (decision.action === "explain") {
-      addMessage(decision.content, "ai");
+      addMessage(decision.content || "Explanation unavailable.", "ai");
       return;
     }
 
     if (decision.action !== "solve") {
-      throw new Error("Unknown AI action");
-    }
-    // 🔹 DIGITAL DOMAIN HANDLING (NO EQUATIONS)
-if (domain === "digital") {
-  const solverResult = await callSolver(
-    ROUTES.digital[operation],
-    payload
-  );
-
-  addMessage(formatResult(domain, operation, solverResult), "ai");
-  return;
-}
-
-    addMessage("Solving using engineering laws…", "ai");
-
-    // 🧠 FRONTEND DOES EXTRACTION (FINAL FIX)
-    const equations = extractEquations(userText);
-    const variables = extractVariables(equations);
-
-    if (!equations.length || !variables.length) {
-      throw new Error("No equations or variables detected");
+      throw new Error("Unknown action");
     }
 
+    // ✅ DECLARE EVERYTHING FIRST (NO TDZ)
     let domain = normalizeDomain(decision.domain);
     let operation = normalizeOperation(decision.operation);
 
@@ -224,8 +197,30 @@ if (domain === "digital") {
       operation = OPERATION_ALIASES[domain][operation];
     }
 
-    if (!ROUTES[domain]?.[operation]) {
-      throw new Error("Unsupported operation");
+    if (!ROUTES[domain] || !ROUTES[domain][operation]) {
+      addMessage("Sorry, I don’t support that operation yet.", "ai");
+      return;
+    }
+
+    addMessage("Solving using engineering laws…", "ai");
+
+    // DIGITAL / LOGIC / MACHINES (NO EQUATIONS)
+    if (domain !== "dc" && domain !== "ac") {
+      const solverResult = await callSolver(
+        ROUTES[domain][operation],
+        {}
+      );
+      addMessage(formatResult(solverResult), "ai");
+      return;
+    }
+
+    // DC / AC (EQUATIONS REQUIRED)
+    const equations = extractEquations(userText);
+    const variables = extractVariables(equations);
+
+    if (!equations.length || !variables.length) {
+      addMessage("Please provide valid equations.", "ai");
+      return;
     }
 
     const solverResult = await callSolver(
@@ -238,7 +233,7 @@ if (domain === "digital") {
   } catch (err) {
     console.error(err);
     addMessage(
-      "I couldn’t process that request. Please rephrase or provide clearer equations.",
+      "I couldn’t process that request. Please rephrase or provide clearer input.",
       "ai"
     );
   }
@@ -276,29 +271,20 @@ async function callSolver(endpoint, payload) {
   });
 
   const text = await res.text();
-
-  if (!res.ok) {
-    throw new Error("Solver failed: " + text);
-  }
-
-  try {
-    return JSON.parse(text);
-  } catch {
-    throw new Error("Solver returned non-JSON: " + text);
-  }
+  if (!res.ok) throw new Error(text);
+  return JSON.parse(text);
 }
-
 
 /* ===========================
-   RESULT FORMATTER (HUMAN)
+   FORMAT RESULT (HUMAN)
 =========================== */
 function formatResult(result) {
-  if (!result.solution) return "Solution computed.";
-
-  let text = "✅ Solution:\n\n";
-  for (const [k, v] of Object.entries(result.solution)) {
-    text += `${k} = ${Number(v).toFixed(4)} A\n`;
+  if (result?.solution) {
+    let out = "✅ Solution:\n\n";
+    for (const [k, v] of Object.entries(result.solution)) {
+      out += `${k} = ${Number(v).toFixed(4)}\n`;
+    }
+    return out;
   }
-  return text;
+  return JSON.stringify(result, null, 2);
 }
-
