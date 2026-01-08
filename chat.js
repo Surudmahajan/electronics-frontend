@@ -1,83 +1,72 @@
-const AI_PROXY_URL =
-  "https://surudmahajan12-aiproxy.hf.space/classify";
-
-const BACKEND_BASE_URL =
-  "https://surudmahajan12-electronics.hf.space";
+const AI_PROXY = "https://surudmahajan12-aiproxy.hf.space";
+const BACKEND = "https://surudmahajan12-electronics.hf.space";
 
 export async function sendMessage() {
   const input = document.getElementById("userInput").value.trim();
-  const output = document.getElementById("output");
+  const out = document.getElementById("output");
   const status = document.getElementById("status");
 
-  output.textContent = "";
-  status.textContent = "";
+  if (!input) return;
 
-  if (!input) {
-    status.textContent = "Please enter a query.";
-    return;
-  }
+  status.textContent = "Thinking…";
+  out.textContent = "";
 
-  status.textContent = "Classifying intent…";
+  const intent = await fetch(`${AI_PROXY}/classify`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message: input })
+  }).then(r => r.json());
 
-  let intent;
-  try {
-    const res = await fetch(AI_PROXY_URL, {
+  /* -------- MODE: EXPLAIN CONCEPT -------- */
+  if (intent.mode === "explain_concept") {
+    const explanation = await fetch(`${AI_PROXY}/explain`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ message: input })
-    });
-    intent = await res.json();
-  } catch {
-    status.textContent = "AI proxy not reachable.";
+    }).then(r => r.json());
+
+    status.textContent = "Explanation";
+    out.textContent = explanation.explanation;
     return;
   }
 
-  if (intent.error) {
-    status.textContent = "AI classification failed.";
-    output.textContent = JSON.stringify(intent, null, 2);
-    return;
-  }
+  /* -------- MODE: CALCULATE -------- */
+  if (intent.mode === "calculate") {
+    let payload = null;
 
-  status.textContent =
-    `Detected: ${intent.domain} → ${intent.operation}`;
-
-  try {
-    let result;
-
-    if (intent.method === "GET") {
-      const res = await fetch(
-        BACKEND_BASE_URL + intent.endpoint
-      );
-      result = await res.json();
-    } else {
-      const payloadText = prompt(
-        `Enter JSON payload for ${intent.endpoint}`
-      );
-
-      if (!payloadText) {
-        status.textContent = "Cancelled.";
-        return;
-      }
-
-      const payload = JSON.parse(payloadText);
-
-      const res = await fetch(
-        BACKEND_BASE_URL + intent.endpoint,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
-        }
-      );
-
-      result = await res.json();
+    if (intent.method === "POST") {
+      payload = JSON.parse(prompt("Enter input JSON"));
     }
 
-    status.textContent = "Completed.";
-    output.textContent = JSON.stringify(result, null, 2);
+    const result = await fetch(
+      BACKEND + intent.endpoint,
+      {
+        method: intent.method,
+        headers: { "Content-Type": "application/json" },
+        body: payload ? JSON.stringify(payload) : null
+      }
+    ).then(r => r.json());
 
-  } catch (err) {
-    status.textContent = "Backend call failed.";
+    /* -------- MODE: EXPLAIN RESULT -------- */
+    if (intent.mode === "calculate" && input.toLowerCase().includes("explain")) {
+      const explanation = await fetch(`${AI_PROXY}/explain`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: input,
+          backend_result: result
+        })
+      }).then(r => r.json());
+
+      status.textContent = "Result + Explanation";
+      out.textContent =
+        JSON.stringify(result, null, 2) + "\n\n" + explanation.explanation;
+      return;
+    }
+
+    status.textContent = "Result";
+    out.textContent = JSON.stringify(result, null, 2);
   }
 }
+
 
