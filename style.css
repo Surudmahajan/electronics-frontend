@@ -4,82 +4,89 @@
 
 body {
   margin: 0;
-  font-family: system-ui, sans-serif;
-  background: #0b1220;
+  font-family: "Inter", "Segoe UI", Arial, sans-serif;
+  background: linear-gradient(135deg, #0f172a, #020617);
   color: #e5e7eb;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .app {
+  width: 90%;
   max-width: 900px;
-  margin: auto;
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
+  background: #020617;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
 }
 
 .header {
-  padding: 16px;
-  background: #020617;
-  border-bottom: 1px solid #334155;
-  font-size: 18px;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 1.8rem;
   font-weight: 600;
 }
 
-.chat {
-  flex: 1;
-  padding: 20px;
-  overflow-y: auto;
+.header p {
+  margin-top: 6px;
+  color: #9ca3af;
+  font-size: 0.95rem;
 }
 
-.message {
-  margin-bottom: 14px;
-  max-width: 80%;
-  padding: 12px 14px;
-  border-radius: 10px;
-  line-height: 1.4;
-  white-space: pre-wrap;
-}
-
-.user {
-  background: #2563eb;
-  color: white;
-  margin-left: auto;
-}
-
-.ai {
-  background: #020617;
-  border: 1px solid #334155;
-}
-
-.input-area {
-  display: flex;
+textarea {
+  width: 100%;
+  min-height: 90px;
+  resize: vertical;
+  border-radius: 12px;
   padding: 14px;
-  border-top: 1px solid #334155;
-  background: #020617;
-}
-
-.input-area input {
-  flex: 1;
-  padding: 12px;
-  border-radius: 8px;
-  border: 1px solid #334155;
+  font-size: 1rem;
   background: #020617;
   color: #e5e7eb;
-  font-size: 14px;
+  border: 1px solid #1e293b;
+  outline: none;
 }
 
-.input-area button {
-  margin-left: 10px;
-  padding: 12px 18px;
+textarea:focus {
+  border-color: #38bdf8;
+}
+
+button {
+  margin-top: 14px;
+  width: 100%;
+  padding: 14px;
+  border-radius: 12px;
   border: none;
-  border-radius: 8px;
-  background: #2563eb;
-  color: white;
+  font-size: 1rem;
+  font-weight: 600;
   cursor: pointer;
-  font-size: 14px;
+  background: linear-gradient(135deg, #38bdf8, #2563eb);
+  color: #020617;
 }
 
-.input-area button:hover {
-  background: #1d4ed8;
+button:hover {
+  opacity: 0.9;
+}
+
+.status {
+  margin-top: 16px;
+  font-size: 0.9rem;
+  color: #9ca3af;
+}
+
+pre {
+  margin-top: 16px;
+  background: #020617;
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid #1e293b;
+  overflow-x: auto;
+  font-size: 0.85rem;
+  line-height: 1.4;
 }
 
