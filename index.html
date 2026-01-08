@@ -7,25 +7,28 @@
 </head>
 <body>
 
-<div class="app">
-  <div class="header">
-    ⚡ Electronics AI Engine
+  <div class="app">
+    <div class="header">
+      <h1>Electronics AI Engine</h1>
+      <p>DC • AC • Machines • Digital • Logic • Combinational</p>
+    </div>
+
+    <textarea
+      id="userInput"
+      placeholder="Example: perform nodal analysis for a DC circuit"
+    ></textarea>
+
+    <button onclick="send()">Run</button>
+
+    <div class="status" id="status"></div>
+
+    <pre id="output"></pre>
   </div>
 
-  <div id="chat" class="chat"></div>
+  <script type="module">
+    import { sendMessage } from "./chat.js";
+    window.send = sendMessage;
+  </script>
 
-  <div class="input-area">
-   <textarea
-  id="userInput"
-  rows="5"
-  placeholder="Enter equations (one per line). Press Enter for new line."
-  autocomplete="off"
-></textarea>
-
-    <button onclick="sendMessage()">Send</button>
-  </div>
-</div>
-
-<script src="chat.js"></script>
 </body>
 </html>
