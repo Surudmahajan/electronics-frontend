@@ -8,11 +8,13 @@
 <body>
 
   <div class="app">
+
     <div class="header">
       <h1>Electronics AI Engine</h1>
       <p>DC • AC • Machines • Digital • Logic • Combinational</p>
     </div>
 
+    <!-- USER QUERY -->
     <textarea
       id="userInput"
       placeholder="Example: perform nodal analysis for a DC circuit"
@@ -20,16 +22,22 @@
 
     <button onclick="send()">Run</button>
 
+    <!-- STATUS -->
     <div class="status" id="status"></div>
 
+    <!-- 🔴 NEW: DYNAMIC FORM RENDERED HERE -->
+    <div id="form"></div>
+
+    <!-- OUTPUT -->
     <pre id="output"></pre>
+
   </div>
 
+  <!-- SCRIPT -->
   <script type="module">
-  import { sendMessage } from "./chat.js?v=2";
-  window.send = sendMessage;
-</script>
-
+    import { sendMessage } from "./chat.js?v=2";
+    window.send = sendMessage;
+  </script>
 
 </body>
 </html>
