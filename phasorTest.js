@@ -1,6 +1,3 @@
-<div id="phasor"></div>
-<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-<script>
 function renderPhasor(data) {
   const traces = data.vectors.map(v => ({
     type: "scatterpolar",
@@ -18,7 +15,7 @@ function renderPhasor(data) {
   });
 }
 
-// MOCK BACKEND RESPONSE (simulate API)
+// Simulated backend response
 const response = {
   visual_type: "phasor",
   vectors: [
@@ -30,4 +27,4 @@ const response = {
 };
 
 renderPhasor(response);
-</script>
+
