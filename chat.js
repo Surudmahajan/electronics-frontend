@@ -71,6 +71,23 @@ export async function sendMessage() {
         intent.method,
         payload
       );
+        console.log("BACKEND RESULT:", result);
+        /* SEND RESULT TO VISUALS IFRAME */
+const visualsIframe = document.getElementById("visuals-iframe");
+if (visualsIframe && visualsIframe.contentWindow) {
+  visualsIframe.contentWindow.postMessage(
+    {
+      type: "ENGINE_RESULT",
+      payload: {
+        domain: intent.domain,
+        operation: intent.operation,
+        data: result
+      }
+    },
+    "*"
+  );
+}
+
 
       /* AI EXPLANATION (AUTO) */
       statusEl.textContent = "Explaining solution…";
