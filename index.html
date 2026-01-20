@@ -22,30 +22,35 @@ You may not use this file except in compliance with the License.
   <button onclick="sendTestToVisuals()">Send test data</button>
 
 <script>
-function sendTestToVisuals() {
+function sendTestVisuals() {
   const iframe = document.getElementById("visuals-iframe");
 
- iframe.contentWindow.postMessage(
-  {
-    type: "ENGINE_RESULT",
-    payload: {
-      domain: "electronics",
-      subdomain: "dc",
-      operation: "nodal",
-      data: {
-        node_voltages: {
-          V1: 5,
-          V2: 2.3,
-          V3: 0
+  if (!iframe) {
+    console.error("visuals-iframe not found");
+    return;
+  }
+
+  iframe.contentWindow.postMessage(
+    {
+      type: "ENGINE_RESULT",
+      payload: {
+        domain: "electronics",
+        subdomain: "dc",
+        operation: "nodal",
+        data: {
+          node_voltages: {
+            V1: 5,
+            V2: 2.3,
+            V3: 0
+          }
         }
       }
-    }
-  },
-  "*"
-);
-
+    },
+    "*"
+  );
 }
 </script>
+
 
 
   <div class="app">
