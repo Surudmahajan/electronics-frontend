@@ -25,21 +25,26 @@ You may not use this file except in compliance with the License.
 function sendTestToVisuals() {
   const iframe = document.getElementById("visuals-iframe");
 
-  iframe.contentWindow.postMessage(
-    {
-      type: "ENGINE_RESULT",
-      payload: {
-        domain: "electronics",
-        subdomain: "ac",
-        operation: "test_operation",
-        data: {
-          message: "Hello from engine page 👋",
-          value: 42
-        }
+ iframe.contentWindow.postMessage(
+  {
+    type: "ENGINE_RESULT",
+    payload: {
+      domain: "electronics",
+      subdomain: "ac",
+      operation: "series_rlc",
+      data: {
+        vectors: [
+          { label: "V_R", magnitude: 120, angle_deg: 0 },
+          { label: "V_L", magnitude: 80, angle_deg: 90 },
+          { label: "V_C", magnitude: 50, angle_deg: -90 },
+          { label: "V", magnitude: 230, angle_deg: 15 }
+        ]
       }
-    },
-    "*"
-  );
+    }
+  },
+  "*"
+);
+
 }
 </script>
 
