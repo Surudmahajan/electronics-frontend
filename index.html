@@ -13,51 +13,13 @@ You may not use this file except in compliance with the License.
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <!---Testing part--->
-<iframe
-  id="visuals-iframe"
-  src="https://surudmahajan.github.io/test/"
-  style="width:100%; height:300px; border:1px solid #ccc;"
-></iframe>
-  <button onclick="sendTestToVisuals()">Send test data</button>
-
-<script>
-function sendTestToVisuals() {
-  const iframe = document.getElementById("visuals-iframe");
-
-  if (!iframe) {
-    console.error("visuals-iframe not found");
-    return;
-  }
-
-  iframe.contentWindow.postMessage(
-    {
-      type: "ENGINE_RESULT",
-      payload: {
-        domain: "electronics",
-        subdomain: "dc",
-        operation: "nodal",
-        data: {
-          node_voltages: {
-            V1: 5,
-            V2: 2.3,
-            V3: 0
-          }
-        }
-      }
-    },
-    "*"
-  );
-}
-</script>
-
 
 
   <div class="app">
 
     <div class="header">
       <h1>Electronics AI Engine</h1>
-      <p>DC • AC • Machines • Digital • Logic • Combinational</p>
+      <p>DC • AC • Machines • Digital • Logic • Combinational and more...</p>
     </div>
 
     <!-- USER QUERY -->
@@ -83,7 +45,11 @@ function sendTestToVisuals() {
     import { sendMessage } from "./chat.js?v=3";
     window.send = sendMessage;
   </script>
-  
+  <iframe
+  id="visuals-iframe"
+  src="https://surudmahajan.github.io/test/"
+  style="width:100%; height:300px; border:1px solid #ccc;"
+></iframe>
 
 </body>
 </html>
