@@ -45,6 +45,27 @@ You may not use this file except in compliance with the License.
     import { sendMessage } from "./chat.js?v=3";
     window.send = sendMessage;
   </script>
+  <script>
+    let visualsVisible = true;
+
+    function toggleVisuals() {
+      const panel = document.getElementById("visuals-panel");
+      const btn = event.target;
+
+      visualsVisible = !visualsVisible;
+      panel.classList.toggle("hidden", !visualsVisible);
+
+      btn.textContent = visualsVisible ? "Hide" : "Show";
+    }
+
+    function fullscreenVisuals() {
+      const panel = document.getElementById("visuals-panel");
+      panel.classList.toggle("fullscreen");
+
+      // safety: fullscreen should always be visible
+      panel.classList.remove("hidden");
+    }
+  </script>
   <!-- VISUALS PANEL -->
 <div class="visuals-panel" id="visuals-panel">
 
