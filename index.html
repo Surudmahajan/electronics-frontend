@@ -45,11 +45,25 @@ You may not use this file except in compliance with the License.
     import { sendMessage } from "./chat.js?v=3";
     window.send = sendMessage;
   </script>
+  <!-- VISUALS PANEL -->
+<div class="visuals-panel" id="visuals-panel">
+
+  <div class="visuals-toolbar">
+    <span>Visuals</span>
+    <div class="visuals-actions">
+      <button onclick="toggleVisuals()">Hide</button>
+      <button onclick="fullscreenVisuals()">Fullscreen</button>
+    </div>
+  </div>
+
   <iframe
-  id="visuals-iframe"
-  src="https://surudmahajan.github.io/test/"
-  style="width:100%; height:300px; border:1px solid #ccc;"
-></iframe>
+    id="visuals-iframe"
+    src="https://surudmahajan.github.io/test/"
+    loading="lazy"
+  ></iframe>
+
+</div>
+
 
 </body>
 </html>
