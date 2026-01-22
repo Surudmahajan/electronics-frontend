@@ -15,6 +15,7 @@ import { SCHEMAS } from "./schemas.js";
 
 const AI_PROXY_BASE = "https://surudmahajan12-aiproxy.hf.space";
 const BACKEND_BASE = "https://surudmahajan12-electronics.hf.space";
+const VISUALS_ORIGIN = "https://ovisual.netlify.app";
 
 /* ===============================
    MAIN ENTRY
@@ -84,7 +85,7 @@ if (visualsIframe && visualsIframe.contentWindow) {
         data: result
       }
     },
-    "*"
+    VISUALS_ORIGIN
   );
 }
 
