@@ -9,36 +9,63 @@ You may not use this file except in compliance with the License.
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Electronics AI Engine</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
+  <div class="grid-overlay"></div>
 
   <div class="app">
-
     <div class="header">
+      <div class="logo-icon">⚡</div>
       <h1>Electronics AI Engine</h1>
       <p>DC • AC • Machines • Digital • Logic • Combinational and more...</p>
     </div>
 
-    <!-- USER QUERY -->
-    <textarea
-      id="userInput"
-      placeholder="Example: solve nodal analysis for a DC circuit"
-    ></textarea>
+    <div class="input-section">
+      <textarea
+        id="userInput"
+        placeholder="Example: solve nodal analysis for a DC circuit..."
+      ></textarea>
+      
+      <div class="action-bar">
+        <div class="status" id="status">Ready to process...</div>
+        <button class="run-btn" onclick="send()">
+          <span>Run Analysis</span>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+        </button>
+      </div>
+    </div>
 
-    <button onclick="send()">Run</button>
-
-    <!-- STATUS -->
-    <div class="status" id="status"></div>
-
-    <!-- DYNAMIC INPUT FORM -->
     <div id="form"></div>
 
-    <!-- OUTPUT -->
-    <pre id="output"></pre>
+    <div class="output-container">
+      <pre id="output"></pre>
+    </div>
 
+    <div class="visuals-panel" id="visuals-panel">
+      <div class="visuals-toolbar">
+        <div class="panel-title">
+            <span class="dot"></span>
+            Visuals Engine
+        </div>
+        <div class="visuals-actions">
+          <button class="tool-btn" onclick="toggleVisuals()">Hide</button>
+          <button class="tool-btn primary" onclick="fullscreenVisuals()">Fullscreen</button>
+        </div>
+      </div>
+
+      <div class="iframe-wrapper">
+        <iframe
+          id="visuals-iframe"
+          src="https://ovisual.netlify.app/"
+          loading="lazy"
+        ></iframe>
+      </div>
+    </div>
   </div>
 
   <script type="module">
@@ -61,30 +88,8 @@ You may not use this file except in compliance with the License.
     function fullscreenVisuals() {
       const panel = document.getElementById("visuals-panel");
       panel.classList.toggle("fullscreen");
-
-      // safety: fullscreen should always be visible
       panel.classList.remove("hidden");
     }
   </script>
-  <!-- VISUALS PANEL -->
-<div class="visuals-panel" id="visuals-panel">
-
-  <div class="visuals-toolbar">
-    <span>Visuals</span>
-    <div class="visuals-actions">
-      <button onclick="toggleVisuals()">Hide</button>
-      <button onclick="fullscreenVisuals()">Fullscreen</button>
-    </div>
-  </div>
-
-  <iframe
-    id="visuals-iframe"
-    src="https://ovisual.netlify.app/"
-    loading="lazy"
-  ></iframe>
-
-</div>
-
-
 </body>
 </html>
