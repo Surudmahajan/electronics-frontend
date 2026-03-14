@@ -91,21 +91,68 @@ You may not use this file except in compliance with the License.
       panel.classList.remove("hidden");
     }
   </script>
+  <!-- Floating Button -->
+<div id="omniaiToggle"
+     style="
+       position: fixed;
+       bottom: 20px;
+       right: 20px;
+       width: 60px;
+       height: 60px;
+       border-radius: 50%;
+       background: linear-gradient(135deg,#2563eb,#1d4ed8);
+       color: white;
+       display: flex;
+       align-items: center;
+       justify-content: center;
+       font-size: 26px;
+       cursor: pointer;
+       box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+       z-index: 10000;">
+⚡
+</div>
+
+<!-- Chat Container -->
+<div id="omniaiContainer"
+     style="
+       position: fixed;
+       bottom: 90px;
+       right: 20px;
+       width: 380px;
+       height: 520px;
+       display: none;
+       z-index: 9999;
+       border-radius: 16px;
+       overflow: hidden;
+       box-shadow: 0 15px 50px rgba(0,0,0,0.5);
+     ">
+
   <iframe
     id="omniaiFrame"
     src="https://surudmahajan.github.io/omniai/"
     style="
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      width: 380px;
-      height: 520px;
-      border: none;
-      z-index: 9999;
-      border-radius: 16px;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.5);
-    "
-  ></iframe>
+      width:100%;
+      height:100%;
+      border:none;
+    ">
+  </iframe>
+
+</div>
+
+<script>
+const toggleBtn = document.getElementById("omniaiToggle");
+const container = document.getElementById("omniaiContainer");
+
+toggleBtn.onclick = () => {
+
+  if (container.style.display === "none") {
+      container.style.display = "block";
+  } else {
+      container.style.display = "none";
+  }
+
+};
+</script>
 
 </body>
 </html>
