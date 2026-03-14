@@ -18,6 +18,23 @@ const BACKEND_BASE = "https://surudmahajan12-electronics.hf.space";
 const VISUALS_ORIGIN = "https://ovisual.netlify.app";
 
 /* ===============================
+   OMNIAI CONTEXT SENDER
+================================ */
+
+function sendContextToOmniAI(context) {
+  const frame = document.getElementById("omniaiFrame");
+
+  if (!frame || !frame.contentWindow) return;
+
+  frame.contentWindow.postMessage(
+    {
+      type: "ENGINE_CONTEXT",
+      payload: context
+    },
+    "*"
+  );
+}
+/* ===============================
    MAIN ENTRY
 ================================ */
 
