@@ -22,23 +22,29 @@ const VISUALS_ORIGIN = "https://ovisual.netlify.app";
 ================================ */
 
 function sendContextToOmniAI(context) {
+
   const frame = document.getElementById("omniaiFrame");
 
   if (!frame) return;
 
-  frame.onload = () => {
-    frame.contentWindow.postMessage({
-      type: "ENGINE_CONTEXT",
-      payload: context
-    }, "*");
-  };
-
-  if (frame.contentWindow) {
+  function post() {
     frame.contentWindow.postMessage({
       type: "ENGINE_CONTEXT",
       payload: context
     }, "*");
   }
+
+  // if iframe already loaded
+  if (frame.contentWindow && frame.dataset.loaded === "true") {
+    post();
+    return;
+  }
+
+  // wait for iframe load
+  frame.onload = () => {
+    frame.dataset.loaded = "true";
+    post();
+  };
 }
 /* ===============================
    MAIN ENTRY
