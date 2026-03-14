@@ -24,15 +24,21 @@ const VISUALS_ORIGIN = "https://ovisual.netlify.app";
 function sendContextToOmniAI(context) {
   const frame = document.getElementById("omniaiFrame");
 
-  if (!frame || !frame.contentWindow) return;
+  if (!frame) return;
 
-  frame.contentWindow.postMessage(
-    {
+  frame.onload = () => {
+    frame.contentWindow.postMessage({
       type: "ENGINE_CONTEXT",
       payload: context
-    },
-    "*"
-  );
+    }, "*");
+  };
+
+  if (frame.contentWindow) {
+    frame.contentWindow.postMessage({
+      type: "ENGINE_CONTEXT",
+      payload: context
+    }, "*");
+  }
 }
 /* ===============================
    MAIN ENTRY
